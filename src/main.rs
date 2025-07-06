@@ -4,24 +4,20 @@
 
 use std::default;
 use std::f32::INFINITY;
+use std::sync::atomic;
 
 use iced::widget::{
-    button,
-    column,
-    text,
-    Column,
-    container,
-    Scrollable,
+    button, column, container, row, text, Column, Scrollable, Text
 
 };
 use iced::{Element, Font};
 use iced::Settings;
 
 #[derive(Debug, Clone)]
-enum Message<'a> {
+enum Message {
     Increment,
     Decrement,
-    Insert(&'a str),
+    Insert(String),
 }
 
 
@@ -29,24 +25,24 @@ enum Message<'a> {
 
 
 
-#[derive(Debug, Clone)]
-struct Entry<'a>{
-    id: u16,
-    placement: u16,
-    title: &'a str,
-    artist: &'a str,
-    link: &'a str,
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct Entry{
+    id: u32,
+    placement: u32,
+    title: String,
+    artist: String,
+    link: String,
     thumbnail: Option<u8>,
 }
 
-impl Default for Entry<'_> {
+impl Default for Entry {
     fn default() -> Self {
         Self { 
             id: 0,
             placement: 0,
-            title: "", 
-            artist: "",
-            link: "",
+            title: String::new(), 
+            artist: String::new(),
+            link: String::new(),
             thumbnail: None
         }
     }
@@ -54,10 +50,12 @@ impl Default for Entry<'_> {
 
 
 
+
+
 trait EntryManager {
     fn sort();
 
-    fn insert(&mut self, test_str: &str);
+    fn insert(&mut self, test_str: String);
 
     fn insertAt();
 
@@ -68,35 +66,39 @@ trait EntryManager {
 
 
 #[derive(Debug, Clone)]
-struct State<'a> {
+struct State {
     current_imported: u32,
     total_imported: u32,
     entries_cached: bool,
-    entries: Vec<Entry<'a>>,
+    entries: Vec<Entry>,
 }
 
-impl Default for State<'_> {
+impl Default for State {
     fn default() -> Self {
         Self { current_imported: 0, total_imported: 0, entries_cached: false, entries: Vec::with_capacity(100) }
     }
 }
 
 
-impl<'a> EntryManager for State<'a> {
+impl<'a> EntryManager for State {
     
     fn sort() {
         todo!()
     }
 
-    fn insert(&mut self, test_str: &str) {
     
+    fn insert(&mut self, test_str: String) {
+        
+        self.current_imported += 1;
+        self.total_imported += 1;
 
-    
         self.entries.push(
             Entry {
-                title: test_str.to_string().as_str(), ..Default::default()
+                title: test_str.to_string(), id: self.total_imported, placement: self.current_imported, ..Default::default()
             }
         );
+
+        
     }
 
     fn insertAt() {
@@ -113,7 +115,7 @@ impl<'a> EntryManager for State<'a> {
 }
 
 
-impl State<'_> {
+impl State {
 
     fn update(state: &mut State, message: Message) {
         
@@ -128,7 +130,7 @@ impl State<'_> {
 
     }
 
-    fn view<'a>(state: &'a State) -> Element<'a, Message<'a>> {
+    fn view<'a>(state: &'a State) -> Element<'a, Message> {
         
         
         
@@ -149,12 +151,25 @@ impl State<'_> {
             text(
                 state.current_imported
             )
-        ).on_press(Message::Insert("test"));
+        ).on_press(Message::Insert(String::from("test")));
 
+
+        let m_col;
+        if state.total_imported > 0 {
+            m_col = state.entries.iter().map(|s| Text::new(&s.title)).fold(Column::new(), |col, text| col.push(text));
+        } else {
+            m_col = column![text(String::from("lol"))];
+        }
+            
+        
 
         let interface = column![inc, dec, add];
+        
+        let irow = row!(interface, m_col);
 
-        container(interface)
+        println!("{:#?}",  state);
+
+        container(irow)
                                     .center_x(INFINITY)
                                     .style(container::rounded_box)
                                     .padding(10)
