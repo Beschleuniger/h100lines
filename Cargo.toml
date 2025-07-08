@@ -3,8 +3,22 @@ name = "m100"
 version = "0.1.0"
 edition = "2024"
 
+
+[profile.dev]
+debug = 2
+opt-level = 0
+debug-assertions = true
+
+
+[profile.release]
+debug = 0
+lto = "fat"
+opt-level = 3
+strip = "symbols"
+incremental = true
+debug-assertions = false
+
 [dependencies]
 iced = "0.13.1"
-
 
 
