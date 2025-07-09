@@ -1,4 +1,6 @@
 
+use std::path::PathBuf;
+
 use crate::helper::*;
 
 
@@ -11,6 +13,7 @@ pub enum Message {
     DeleteAt(usize),
     MoveUp(usize),
     MoveDown(usize),
+    DownloadComplete(String),
 }
 
 
@@ -31,7 +34,7 @@ pub struct Entry{
     pub title: String,
     pub artist: String,
     pub link: String,
-    pub thumbnail: Option<u8>,
+    pub thumbnail: Option<PathBuf>,
 }
 
 impl Default for Entry {
@@ -51,7 +54,7 @@ impl Default for Entry {
 pub trait EntryManager {
     fn resetIDS(&mut self);
 
-    fn insert(&mut self, name: String, artist: String, link: Option<String>);
+    fn insert(&mut self, name: &String, artist: &String);
 
     fn insertAt();
 
@@ -100,7 +103,7 @@ impl<'a> EntryManager for State {
 
     }
     
-    fn insert(&mut self, name: String, artist: String, link: Option<String>) {
+    fn insert(&mut self, name: &String, artist: &String) { //, link: Option<&String>
         
         if self.total_imported > u32::MAX as usize {
             return ();
@@ -109,18 +112,17 @@ impl<'a> EntryManager for State {
         self.current_imported += 1;
         self.total_imported += 1;
 
-        let true_link: String = match link {
-            Some(L) => validateOrReplaceLink(L, &name, &artist),
-            None => searchLink(&name, &artist),
-        };
+        // let true_link: String = match link {
+        //     Some(L) => validateOrReplaceLink(*L, name, artist),
+        //     None => searchLink(&name, &artist),
+        // };
 
         self.entries.push(
             Entry {
-                title: name,
-                artist: artist,
+                title: name.clone(),
+                artist: artist.clone(),
                 id: self.total_imported,
                 placement: self.current_imported,
-                link: true_link,
                 ..Default::default()
             }
         );

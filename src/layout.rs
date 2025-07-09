@@ -2,11 +2,15 @@
 use std::f32::INFINITY;
 
 use iced::widget::{
-    button, column, container, row, text, Button, Column, Container, Scrollable, Text
-
+    button, column, container, row, text,
+    Button, Column, Container, Scrollable, Text,
+    Image, image
 };
-use iced::{Color, Element, Font};
+use iced::{alignment, Color, Element, Font, Task};
+use iced::task;
 
+
+use crate::helper::validateOrReplaceLink;
 use crate::state::*;
 use crate::styling::{bgStyle, BORDER_RADIUS};
 
@@ -14,16 +18,28 @@ use crate::styling::{bgStyle, BORDER_RADIUS};
 
 impl State {
 
-    pub fn update(state: &mut State, message: Message) {
+    pub fn update(state: &mut State, message: Message) -> Task<self::Message> {
         
         match message {
             Message::InsertNA(name, artist) => todo!(),
-            Message::InsertNAY(name, artist, link) => state.insert(name, artist, Some(link)),
+            Message::InsertNAY(name, artist, link) => {
+                state.insert(&name, &artist);
+                
+
+
+                return Task::perform(
+                    async move {
+                        validateOrReplaceLink(link, &name, &artist).await
+                    },
+                    |result| Message::DownloadComplete(result) // change to right key
+                );
+            },
             Message::InsertFromYT(playlist) => todo!(),
             Message::MoveUp(index) => state.moveUp(index),
             Message::MoveDown(index) => state.moveDown(index),
             Message::DeleteLast => state.delete(),
             Message::DeleteAt(_) => todo!(),
+            Message::DownloadComplete(link) => println!("Download Complete {}", link),
         }
 
         state.resetIDS();
@@ -31,6 +47,12 @@ impl State {
         let s = state.current_imported;
         println!("{s}");
 
+        //let task = Task::batch(vec![]);
+        //task
+
+
+
+        Task::none()
     }
 
     pub fn view<'a>(state: &'a State) -> Element<'a, Message> {
@@ -47,24 +69,7 @@ impl State {
             iced::widget::Text::<'_, iced::Theme, iced::Renderer>::new("-")
         ).on_press(Message::DeleteLast);
 
-
-        // Display Lists
-
-        // let m_col;
-        // if state.total_imported > 0 {
-        //     m_col = state.entries.iter().map(|s| Text::new(&s.title)).fold(Column::new(), |col, text| col.push(text));
-        // } else {
-        //     m_col = column![text(String::from("lol"))];
-        // }
-            
-        
-
         let interface = column![add, rem];
-        
-
-        
-
-        
         
         
         let content = state.entries.iter().enumerate().fold(
@@ -97,16 +102,17 @@ fn entry_view(entry: &Entry, index: usize) -> Container<Message> {
         .width(iced::Length::Fill)
         .size(16);
 
-    // let thumb = if let Some(ref path) = entry.thumbnail {
-    //     iced::image(image::Handle::from_path(path)).width(60).height(60)
-    // } else {
-    //     container(text("No image").size(12))
-    //         .width(60)
-    //         .height(60)
-    //         .align_x(alignment::Horizontal::Center)
-    //         .align_y(alignment::Vertical::Center)
-    //         .into()
-    // };
+    let thumb: Element<'static, Message> = if let Some(ref path) = entry.thumbnail {
+        image(image::Handle::from_path(path)).width(60).height(60).into()
+    } else {
+        container(text("No image").size(12))
+            .width(60)
+            .height(60)
+            .align_x(alignment::Horizontal::Center)
+            .align_y(alignment::Vertical::Center)
+            .into()
+    };
+
 
     let buttons = Column::new()
         .spacing(2)
@@ -121,7 +127,8 @@ fn entry_view(entry: &Entry, index: usize) -> Container<Message> {
         .spacing(10)
         .push(buttons)
         .push(placement)
-        .push(details);
+        .push(details)
+        .push(thumb);
 
     container(entry_row)
         .padding(10)

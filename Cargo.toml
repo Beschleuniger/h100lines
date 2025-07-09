@@ -7,7 +7,9 @@ edition = "2024"
 [profile.dev]
 debug = 2
 opt-level = 0
+incremental = true
 debug-assertions = true
+
 
 
 [profile.release]
@@ -19,6 +21,6 @@ incremental = true
 debug-assertions = false
 
 [dependencies]
-iced = "0.13.1"
-
-
+iced = {version = "0.13.1", features = ["image", "multi-window", "tokio", "async-std", "lazy", ]}
+reqwest = "0.12.22"
+dotenv = "0.15.0"
